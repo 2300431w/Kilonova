@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 #Global variables
 M_solar = 1.988e30
@@ -56,21 +57,34 @@ def M_X(t, a_x, M_ej, theta_ej, e_th, e_0, t_c, alpha):
 # e_0 in [1]
 # alpha in [1]
 L = []
+
+
 M = []
+for f in np.linspace(0.01,1.5,100):
+    M_temp = [] #temporary matrix to hold the magnitude line for the fraction of solar mass
+    
+    M_ej = f*M_solar
 
-M_ej = 0.1*M_solar
+    for t in np.linspace(1/1000,7,1000):
+        R = M_X(t,a_r, M_ej = M_ej, theta_ej = 0, e_th = 1, e_0 = 1.58e10, t_c = 10, alpha = 1.3)
+        M_temp.append(R)
+        
+    M_temp = np.array(M_temp)
+    M.append(M_temp)
 
-for t in np.linspace(1/1000,7,1000):
-    R = M_X(t,a_r, M_ej = M_ej, theta_ej = 0, e_th = 1, e_0 = 1.58e10, t_c = 10, alpha = 1.3)
-    M.append(R)
 M = np.array(M)
+mass = np.linspace(0.01,1.5,100)
 
-plt.ylabel("Magnitude")
-plt.xlabel("Time [days]")
-plt.title("r-band Magnitude for M_ej = 0.1M_solar")
-plt.gca().invert_yaxis()
-plt.plot(np.linspace(1/1000,7,1000),M)
-plt.show()
+d = []
+for x in np.arange(100):
+    d.append(np.array([mass[x],M[x]]))
 
+d = np.array(d)
+df = pd.DataFrame(data = d,
+                  columns = list(["mass","r-band"]))
+
+df.to_pickle("r band dataframe.pkl")
+
+#print(df.loc[0,:])
 # [1] https://iopscience.iop.org/article/10.1088/1361-6382/aa6bb0/pdf
 # [2] https://link.springer.com/content/pdf/10.1007/s41114-017-0006-z.pdf

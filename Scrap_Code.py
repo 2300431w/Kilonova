@@ -46,3 +46,38 @@ for x in np.arange(len(ordered)):
 #plt.legend()
 plt.tight_layout()
 plt.show()
+
+
+#------------------------For Plotting many different masses in collision----------#
+
+min_M = M[0]
+avg_M = np.mean(M,axis = 0)
+max_M = M[-1]
+
+
+#simply to colour grade the graphs low mass is Red, high mass is Blue
+colours = []
+x = np.linspace(0,1,100) 
+for c in x:
+    colours.append([1-c,0,c])
+
+    
+plt.title("Magnitude spectra vs mass image")
+plt.imshow(M[:][:])
+plt.xlabel("time (iteration)")
+plt.ylabel("mass")
+plt.colorbar()
+plt.show()
+for x in np.arange(len(M)):
+    plt.plot(np.linspace(1/1000,7,1000),M[x],c = colours[x])
+
+
+plt.ylabel("Magnitude")
+plt.xlabel("Time [days]")
+plt.title("r-band Magnitude for M_ej = 0.01M_solar -> 1.5M_solar")
+plt.gca().invert_yaxis()
+#plt.plot(np.linspace(1/1000,7,1000),max_M,label = "1.5 Solar Mass")
+#plt.plot(np.linspace(1/1000,7,1000),avg_M, label = "Average")
+#plt.plot(np.linspace(1/1000,7,1000),min_M,label = "0.01 Solar Mass")
+#plt.legend()
+plt.show()
