@@ -14,7 +14,8 @@ I have managed to generate light curves from the equations provided with varying
 After lunch I will look at generating many lightcurves for just the r-band and see how that matches with expected results.
 
 Issues:
--t_c: What is this? How important is it? Where should it roughly be?
--Graphs match the general shape but aren't perfect despite running the same code. May just be due to using too low/high mass but it is most likely an issue hidden in the functions
--theta_ej: What is a reasonable assumption? Or shouls this be given as a parameter.
--epsilon_th: Can we treat this as static? 
+
+- t_c: What is this? How important is it? Where should it roughly be?
+- Graphs match the general shape but aren't perfect despite running the same code. May just be due to using too low/high mass but it is most likely an issue hidden in the functions
+- theta_ej: What is a reasonable assumption? Or shouls this be given as a parameter.
+- epsilon_th: Can we treat this as static? 
