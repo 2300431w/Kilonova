@@ -19,3 +19,7 @@ Issues:
 - Graphs match the general shape but aren't perfect despite running the same code. May just be due to using too low/high mass but it is most likely an issue hidden in the functions
 - theta_ej: What is a reasonable assumption? Or shouls this be given as a parameter.
 - epsilon_th: Can we treat this as static? 
+
+### 15:29
+
+r-band dataframe created. Need to finish for today but it should be easy to try and make more data frames for the other bands.
