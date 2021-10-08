@@ -23,3 +23,10 @@ Issues:
 ### 15:29
 
 r-band dataframe created. Need to finish for today but it should be easy to try and make more data frames for the other bands.
+
+
+## 08/10/2021
+
+Half an hour before Lectures, going to make some more data.
+
+Data frames created
