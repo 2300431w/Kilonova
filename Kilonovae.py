@@ -60,40 +60,33 @@ L = []
 
 
 M = []
-for f in np.linspace(0.01,1.5,100):
+
+for f in np.linspace(0.01,1.5,1000):
     M_temp = [] #temporary matrix to hold the magnitude line for the fraction of solar mass
     
     M_ej = f*M_solar
 
     for t in np.linspace(1/1000,7,1000):
         R = M_X(t,a_r, M_ej = M_ej, theta_ej = 0, e_th = 1, e_0 = 1.58e10, t_c = 10, alpha = 1.3)
-        Z = M_X(t,a_z, M_ej = M_ej, theta_ej = 0, e_th = 1, e_0 = 1.58e10, t_c = 10, alpha = 1.3)
-        I = M_X(t,a_i, M_ej = M_ej, theta_ej = 0, e_th = 1, e_0 = 1.58e10, t_c = 10, alpha = 1.3)
-        G = M_X(t,a_g, M_ej = M_ej, theta_ej = 0, e_th = 1, e_0 = 1.58e10, t_c = 10, alpha = 1.3)
-        U = M_X(t,a_u, M_ej = M_ej, theta_ej = 0, e_th = 1, e_0 = 1.58e10, t_c = 10, alpha = 1.3)
-        K = M_X(t,a_k, M_ej = M_ej, theta_ej = 0, e_th = 1, e_0 = 1.58e10, t_c = 10, alpha = 1.3)
-                
-        M_temp.append([R,Z,I,G,U,K])
+        M_temp.append(R)
         
     M_temp = np.array(M_temp)
     M.append(M_temp)
 
 M = np.array(M)
-mass = np.linspace(0.01,1.5,100)
+mass = np.linspace(0.01,1.5,1000)
 
 d = []
-for x in np.arange(100):
-    d.append(np.array([mass[x],M[x][0],M[x][1],M[x][2],M[x][3],M[x][4],M[x][5]]))
+for x in np.arange(1000):
+    d.append(np.array([mass[x],M[x]]))
 
 d = np.array(d)
 df = pd.DataFrame(data = d,
-                  columns = list(["mass","r-band","z-band","i-band","g-band","u-band","k-band"]))
+                  columns = list(["mass","r-band"]))
+
+df.to_pickle("r band dataframe.pkl")
 
 
-
-print(df['r-band'])
-input("good")
-df.to_pickle("DU17_training/DU17 all band dataframe.pkl")
 
 #print(df.loc[0,:])
 # [1] https://iopscience.iop.org/article/10.1088/1361-6382/aa6bb0/pdf
