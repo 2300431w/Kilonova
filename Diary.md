@@ -46,7 +46,7 @@ In the next attempts I lowered the number of iterations and deviated from the ex
 
 Loss per iteration on attempt 2:
 
-'''
+```
 iteration 0      t_loss: 0.576261579990387
 iteration 30     t_loss: 62857.578125
 iteration 60     t_loss: 338.20013427734375
@@ -81,4 +81,4 @@ iteration 900    t_loss: 0.5843971967697144
 iteration 930    t_loss: 0.5825404524803162
 iteration 960    t_loss: 0.5810912847518921
 iteration 990    t_loss: 0.5799630284309387
-'''
+```
