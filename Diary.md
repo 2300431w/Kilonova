@@ -82,3 +82,7 @@ iteration 930    t_loss: 0.5825404524803162
 iteration 960    t_loss: 0.5810912847518921
 iteration 990    t_loss: 0.5799630284309387
 ```
+# 19/10/2021
+
+## 13:00
+Worked to ensure that the full flow of the model of the paper was followed. This required reworking some of the functions but the process was relatively smooth. However, when this new and "improved" code was run the graph was even further from the expected values than before! This is likely due to a mis understanding in my code or a paramater. The lead culprit is the kappa variable in the M_X function. Some quick testing showed that it could indeed result in higher and lower graph values so I am planning to do some dimensional analysis on the formula it appears in to make sure that I am using the correct value. It is initially given in 10 cm^2 g^-1 which might result in a totally different value when converted to meters, kg etc. 
