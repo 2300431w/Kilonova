@@ -45,11 +45,12 @@ for i in range(num_iter):
     t_loss += loss.item()
 
     train_loss.append(t_loss)
-    if i % 30 == 0:
+    if i % 100 == 0:
         print(f'iteration {i} \t t_loss: {t_loss}')
-        flow.eval()
+        
 
-    
+flow.eval()
+
 plt.plot(train_loss)
 plt.xlabel('Iteration', fontsize=12);
 plt.ylabel('Training loss', fontsize=12);
