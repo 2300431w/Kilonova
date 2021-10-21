@@ -88,14 +88,18 @@ iteration 990    t_loss: 0.5799630284309387
 Worked to ensure that the full flow of the model of the paper was followed. This required reworking some of the functions but the process was relatively smooth. However, when this new and "improved" code was run the graph was even further from the expected values than before! This is likely due to a mis understanding in my code or a paramater. The lead culprit is the kappa variable in the M_X function. Some quick testing showed that it could indeed result in higher and lower graph values so I am planning to do some dimensional analysis on the formula it appears in to make sure that I am using the correct value. It is initially given in 10 cm^2 g^-1 which might result in a totally different value when converted to meters, kg etc. 
 
 ## 16:00
-Even when converted kappa was = 1 m^2/kg which helped very marginally but not by much. I have several functions I need to check before I can move on:
-Functions: (✔ = checked)
-- L_bol ✔
-- M_bol ✔
-- BC_X ✔
-- M_X
-- t_critical
-- vmax
-- velocities
-- v_ejecta
-- theta_ejecta
+Even when converted kappa was = 1 m^2/kg which helped very marginally but not by much. I have several functions I need to check before I can move on.
+
+
+# 21/10/2021
+## 14:37
+The first of the issues solved was by plotting with regards to t' and not t. This was not terribly clear in the paper but it has worked to improve the closeness of the predictions to those from the paper. To better locate the issue I first plotted the Bolometric correction functions to compare to those in the paper. As we can see bellow they were exceptionally close:
+![alt text](https://github.com/2300431w/Kilonova/blob/master/BC%20Curves.png)
+![alt text](https://github.com/2300431w/Kilonova/blob/master/BC%20Curves%20Goal.PNG)
+
+From this we can clearly see that any inconsistency with the Magnitude graphs is not the source of the issues. However when comparing the Bolometric luminosity predictions by the paper and my program we can see significant difference:
+
+![alt text](https://github.com/2300431w/Kilonova/blob/master/L_bol%20vs%20time.png)
+![alt text](https://github.com/2300431w/Kilonova/blob/master/L_bol%20vs%20time%20GOAL.PNG)
+
+The shapes are approximately accurate but there is a clear discrepency on the y-axis. I will try to investigate potential problems in the luminosity function. At least I know where the issue is now and that at least one part is correct
