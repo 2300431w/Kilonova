@@ -107,3 +107,33 @@ The shapes are approximately accurate but there is a clear discrepency on the y-
 # 02/11/2021
 
 Last wednesday I emailed professor Tim Dietrich about the model in the paper he co-authored and he kindly provided a link to the github page. The format of how their application works wasn't terribly clear so I have spent the past week trying to do three things. The first was to try and reconcile my old code using their functions when possible. Second was to try and build a new code base based on their code and the final (and ultimatley succesful) challenge: Search the source code for usable functions to use and put together to make their code work in a convenient way for my project. The other two methods prodced inconsistent results with the other paper for reasons I am not quite sure. The final method's results were far more reliable and used very little of my own code (rather it was old code being rearanged and used in a new way by me). This looks promising and will hopefully provide a useful basis for generating training data. As of right now the function takes in the masses of the NS (m1,m2) and the compactness (c1,c2). I need to ensure that these are variables we can assume will be known quickly enough to be useful in this context or if I will have to add another stage where I calculate c1 and c2 or maybe even m1 and m2 from the GW detection (though such an  in depth analysis of the GW signal seems beyond the scale of this project but you never know).
+
+
+# 23/11/2021
+
+Rather than compactness I needed to use the llamda values instead. Fortunatley there is an EOS agnostic relation (CLove). 
+
+Thanks to m1,m2,l1,l2 combinations from Jordan McGinn I was able to create 100k lightcurves. This was then used to train a normalised Flow AI. So far I have only trained with the g-band of the spectrum (with r,i,z yet to be done) but the proof of concept is there and in theory it shouldn't be difficult to change which spectrum is being trained. See below an example of a train/validation loss from initial g-band training:
+
+![alt_text](https://github.com/2300431w/Kilonova/blob/master/Train_Val_Loss.png)
+
+This suggests some overfitting. The hyper parameters used are: 
+
+```
+flow = RealNVP(
+    n_inputs=901,
+    n_transforms =4,
+    n_conditional_inputs=4,
+    n_neurons=32,
+    batch_norm_between_transforms=True)
+    
+batch_size = 1000
+val_split = 0.33
+epochs = 100
+```
+
+These are the produced graphs: 
+
+![alt_text](https://github.com/2300431w/Kilonova/blob/master/AI_gband_1.png)
+
+With the red line representing the average values while the blue dots are reported from individual lines for values of m1,m2,l1,l2 chosen randomly from the original dataset
