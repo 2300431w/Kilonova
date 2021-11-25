@@ -2,8 +2,10 @@
 
 Training Data length: 100k
 
-Hyper Parameters: 
+Hyper Parameters and setup: 
 ```
+# Training Data length: 100k
+
 flow = RealNVP(
     n_inputs=901,
     n_transforms =4,
