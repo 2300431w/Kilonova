@@ -1,36 +1,26 @@
+# Validation vs Training Loss
+
+Training Data length: 100k
+
+Hyper Parameters: 
 ```
-iteration 0      t_loss: 0.576261579990387
-iteration 30     t_loss: 62857.578125
-iteration 60     t_loss: 338.20013427734375
-iteration 90     t_loss: 232.23345947265625
-iteration 120    t_loss: 59.77543640136719
-iteration 150    t_loss: 21.80772590637207
-iteration 180    t_loss: 11.824857711791992
-iteration 210    t_loss: 6.902825355529785
-iteration 240    t_loss: 4.394950866699219
-iteration 270    t_loss: 3.0358095169067383
-iteration 300    t_loss: 2.2417237758636475
-iteration 330    t_loss: 1.7466562986373901
-iteration 360    t_loss: 1.421630620956421
-iteration 390    t_loss: 1.1995223760604858
-iteration 420    t_loss: 1.0429623126983643
-iteration 450    t_loss: 0.9299145936965942
-iteration 480    t_loss: 0.8467209339141846
-iteration 510    t_loss: 0.7845571637153625
-iteration 540    t_loss: 0.7375448942184448
-iteration 570    t_loss: 0.7016433477401733
-iteration 600    t_loss: 0.6740162968635559
-iteration 630    t_loss: 0.6526268124580383
-iteration 660    t_loss: 0.6359855532646179
-iteration 690    t_loss: 0.6229921579360962
-iteration 720    t_loss: 0.6128208041191101
-iteration 750    t_loss: 0.6048431396484375
-iteration 780    t_loss: 0.5985807776451111
-iteration 810    t_loss: 0.5936625003814697
-iteration 840    t_loss: 0.5898008942604065
-iteration 870    t_loss: 0.5867711305618286
-iteration 900    t_loss: 0.5843971967697144
-iteration 930    t_loss: 0.5825404524803162
-iteration 960    t_loss: 0.5810912847518921
-iteration 990    t_loss: 0.5799630284309387
+flow = RealNVP(
+    n_inputs=901,
+    n_transforms =4,
+    n_conditional_inputs=4,
+    n_neurons=32,
+    batch_norm_between_transforms=True)
+    
+batch_size = 1000
+val_split = 0.33
+epochs = 100
 ```
+
+The Loss vs validation curves are:
+
+![alt text](https://github.com/2300431w/Kilonova/blob/master/Train_Val_Loss_2.png)
+
+comparing the Flow generated data to the model predictions:
+![alt text](https://github.com/2300431w/Kilonova/blob/master/g-band%20flow%20vs%20model.png)
+
+Currently I am making more data by varying the m1,m2,l1,l2 combinations by 1% to generate an additional 400k data points
