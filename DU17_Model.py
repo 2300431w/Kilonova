@@ -96,43 +96,130 @@ def generate_data(data):
         output.append([temp_in,temp_out])
     return(output)
 
+
+
+
+def thread_fn(m1,m2,l1,l2,fname,printing = False):
+    final_data = []
+    L = len(m1)
+    for i in np.arange(L):
+        if printing == True:
+            if "idlelib" not in sys.modules:
+                print(f'\r{100*i/L:.3f}% finished',end = '\r')
+            else:
+                if not i % 1000:
+                    print(f'{i}/{L}\t{100*i/L:.2f}%')
+
+        for x in np.arange(1):
+            m1_ = m1[i] #+ random.uniform(0,0.01)*m1[i] #m1 > m2 => l1 < l2
+            m2_ = m2[i] #+ random.uniform(-0.01,0)*m2[i]
+            l1_ = l1[i] #+ random.uniform(-0.01,0)*l1[i]
+            l2_ = l2[i] #+ random.uniform(0,0.01)*l2[i]
+                
+            conditions,lightcurves = Generate_LightCurve(m1[i],m2[i],l1[i],l2[i])
+            t_d,curves = lightcurves
+            m1_,m2_,l1_,l2_ = conditions
+            g = curves[1]
+            r = curves[2]
+            I = curves[3]
+            z = curves[4]
+
+            d = np.array([m1_,m2_,l1_,l2_,t_d,g,r,I,z])
+            final_data.append(d)
+
+    final_data = np.array(final_data)
+    df = pd.DataFrame(data = final_data,
+                          columns = list(['m1','m2','l1','l2','time','g','r','i','z']))
+
+    df.to_pickle(f"{fname}.pkl")
+    print(f"{fname} done")
+
+def thread_fn2(fname,i,printing = False):
+    print(f'thread {i} starting')
+    final_data = []
+    data = np.array(pd.read_pickle(fname).values)
+    t = 0
+    
+    for d in data:
+        L = len(data)
+        t += 1
+        if printing == True:
+            if "idlelib" not in sys.modules:
+                print(f'\r{100*t/L:.3f}% finished',end = '\r')
+            else:
+                if not i % 1000:
+                    print(f'{t}/{L}\t{100*t/L:.2f}%')
+        m1,m2,l1,l2,t_d,g,r,I,z = d
+        for j in np.arange(5):
+            m1_ = m1 + random.uniform(0,0.01)*m1 #m1 > m2 => l1 < l2
+            m2_ = m2 + random.uniform(-0.01,0)*m2
+            l1_ = l1 + random.uniform(-0.01,0)*l1
+            l2_ = l2 + random.uniform(0,0.01)*l2
+            new_d = np.array([m1_,m2_,l1_,l2_,t_d,g,r,I,z])
+            final_data.append(new_d)
+            
+    final_data = np.array(final_data)
+
+    #print(final_data[0])
+    df = pd.DataFrame(data = final_data,
+                      columns = list(['m1','m2','l1','l2','time','g','r','i','z']))
+    df.to_pickle(f"{fname}_noise.pkl")
+    print(f'thread {i} finished')
+    
 #testing Jordan's code
+if __name__ == "__main__":
+    
+    #adding noise
+    N_threads = 16
+    threads = []
+    
+    for i in np.arange(N_threads):
+        printing = False
+        if i == 16: #16 so there is no progress %
+            printing = True
+        
+        fname = f"DU17_training/DU17_{i}.pkl"
+        x = Thread(target = thread_fn2, args = (fname,i,printing,))
+        threads.append(x)
+        x.start()
+    
+    for thread in threads:
+        thread.join()
+    print("All threads finished")
+    #Making the first data
+    """filedir = "mass_lambda/mass_lambda_distributions.h5"
 
-filedir = "mass_lambda/mass_lambda_distributions.h5"
+    d = h5py.File(filedir, 'r')
+    data = np.array(d.get('labels'))
+    d.close()
 
-d = h5py.File(filedir, 'r')
-data = np.array(d.get('labels'))
-d.close()
+    m1 = data[:,0]
+    m2 = data[:,1]
+    l1 = np.exp(data[:,2])
+    l2 = np.exp(data[:,3])
 
-m1 = data[:,0]
-m2 = data[:,1]
-l1 = np.exp(data[:,2])
-l2 = np.exp(data[:,3])
+    N_threads = 16
+    
+    part_m1 = np.split(m1, N_threads)
+    part_m2 = np.split(m2, N_threads)
+    part_l1 = np.split(l1, N_threads)
+    part_l2 = np.split(l2, N_threads)
+    threads = list()
+    
+    for i in np.arange(N_threads):
+        printing = False
+        if i == 0:
+            printing = True
+        x = Thread(target = thread_fn, args = (part_m1[i],part_m2[i],part_l1[i],part_l2[i],
+                                                         f'DU17_training/DU17_{i}',printing,))
+        threads.append(x)
+        x.start()
+        
+    for thread in threads:
+        thread.join()"""
 
+    #print('m1\tm2\tl1\tl2')
+    
 
-#print('m1\tm2\tl1\tl2')
-final_data = []
-
-L = len(m1)
-for i in np.arange(L):
-    if "idlelib" not in sys.modules:
-        print(f'\r{100*i/L:.3f}% finished',end = '\r')
-    else:
-        if not i % 100:
-            print(f'{i}/{L}\t{100*i/L:.2f}%')
-    conditions,lightcurves = Generate_LightCurve(m1[i],m2[i],l1[i],l2[i])
-    t_d,curves = lightcurves
-    m1_,m2_,l1_,l2_ = conditions
-    g = curves[1]
-    r = curves[2]
-    i = curves[3]
-    z = curves[4]
-
-    d = np.array([m1_,m2_,l1_,l2_,t_d,g,r,i,z])
-    final_data.append(d)
-
-final_data = np.array(final_data)
-df = pd.DataFrame(data = final_data,
-                  columns = list(['m1','m2','l1','l2','time','g','r','i','z']))
-
-df.to_pickle("DU17 data.pkl")
+    
+    
