@@ -137,3 +137,14 @@ These are the produced graphs:
 ![alt_text](https://github.com/2300431w/Kilonova/blob/master/AI_gband_1.png)
 
 With the red line representing the average values while the blue dots are reported from individual lines for values of m1,m2,l1,l2 chosen randomly from the original dataset
+
+# Winter Break
+
+I added noise at some point but it didn't fix the fundamental issues, I have contacted Michael and Jordan over it however over winter break I need to catch up on studies and similair things
+
+# 11/01/2022
+
+## 12:45
+Under the advice of Michael and Jordan I have reduced the number of dimensions by "compressing" the data. Here we are taking the 10th point of every line, Jordan mentioned PCA (Principle Component Analysis) so I should look into that. Currently reducing the resolution of the curve has seemed to help but the examples drawn at the end don't seem close at all. The loss bottoms out at approximatley 83 regardless of batch size,learning rate, or epoch length so perhaps that is indicitive that this approach isn't working.
+
+I have also normalised the curves which I was not doing before. I might try a further compression but I am concerned that anything beyond a factor of 10 will lose too much detail.
