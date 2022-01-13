@@ -153,3 +153,6 @@ I have also normalised the curves which I was not doing before. I might try a fu
 
 ## 10:35
 I need to look into primary component analysis and build new data from it. I'm not sure what the best way to do this is so I have contacted Jordan to see how he suggests it is used with flow models. While I wait I will try to find a way to introduce learning rate scheduling and see if that improves the model.
+
+## 15:34 
+With all the data in a single file the model had loss in the regions of e16 and upwards. When I turn on BatchNorm = True however the loss dropped significantly. learning rate scheduling also seems to be very effective. Currently I am reducing the rate with gamma = 0.1 every 20%*epochs 
