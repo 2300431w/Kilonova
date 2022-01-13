@@ -148,3 +148,8 @@ I added noise at some point but it didn't fix the fundamental issues, I have con
 Under the advice of Michael and Jordan I have reduced the number of dimensions by "compressing" the data. Here we are taking the 10th point of every line, Jordan mentioned PCA (Principle Component Analysis) so I should look into that. Currently reducing the resolution of the curve has seemed to help but the examples drawn at the end don't seem close at all. The loss bottoms out at approximatley 83 regardless of batch size,learning rate, or epoch length so perhaps that is indicitive that this approach isn't working.
 
 I have also normalised the curves which I was not doing before. I might try a further compression but I am concerned that anything beyond a factor of 10 will lose too much detail.
+
+# 13/01/2022
+
+## 10:35
+I need to look into primary component analysis and build new data from it. I'm not sure what the best way to do this is so I have contacted Jordan to see how he suggests it is used with flow models. While I wait I will try to find a way to introduce learning rate scheduling and see if that improves the model.
