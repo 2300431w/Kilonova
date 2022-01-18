@@ -156,3 +156,9 @@ I need to look into primary component analysis and build new data from it. I'm n
 
 ## 15:34 
 With all the data in a single file the model had loss in the regions of e16 and upwards. When I turn on BatchNorm = True however the loss dropped significantly. learning rate scheduling also seems to be very effective. Currently I am reducing the rate with gamma = 0.1 every 20%*epochs 
+
+#18/01/2022
+
+## 11:35
+
+While the AI trains again (loss looking promissing) I am trying to find a way to potentially crop the data. Unfortunatley in some bands the data has values of 0 where nan is given by the original curve so I am seeing if I can crop the data and optimise it for the largest amount of data with the smallest cropping possible
