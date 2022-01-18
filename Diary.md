@@ -157,7 +157,7 @@ I need to look into primary component analysis and build new data from it. I'm n
 ## 15:34 
 With all the data in a single file the model had loss in the regions of e16 and upwards. When I turn on BatchNorm = True however the loss dropped significantly. learning rate scheduling also seems to be very effective. Currently I am reducing the rate with gamma = 0.1 every 20%*epochs 
 
-#18/01/2022
+# 18/01/2022
 
 ## 11:35
 
