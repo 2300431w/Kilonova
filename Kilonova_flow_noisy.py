@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
+import time
+from matplotlib import cm
+plt.style.use('seaborn-colorblind')
 
 from glasflow import RealNVP
 import torch
@@ -15,144 +18,193 @@ from sklearn.utils import shuffle
 from DU17_Model import Generate_LightCurve
 
 
-training_data = os.listdir("DU17_Training")
-device = 'cpu'
+#       HYPER PARAMS           #
+#------------------------------#
+troubleshooting = False #if True you can enter into trouble shooting loops
+
+#basic hyperparameters for the machine learning
+epochs = 2000
+learning_rate = 1e-5
+test_split = 0.33
+batch_size =  1000
+
+#for learning scheduling
+step_f = 0.2
+gamma = 0.1
+
+#which band we are training to
+band = 'z'
+bandindex = ['g','r','i','z'].index(band) + 1
+
+
+#         SETUP 1                   #
+#-----------------------------------#
+#                                   #
+training_data = os.listdir("DU17_Training") #data is stored in this folder but typically is only one file
+loss = dict(train=[],val=[],delta=[]) #initialise loss dict
+
+device = torch.device('cuda')#set device as GPU
+
+#                                SCALING                        #
+#---------------------------------------------------------------#
+#  finding the scaling constant to use to normalise the curves  #
+
+fname = "Data_Cache/Original/Original_combined.pkl"
+data = pd.read_pickle(fname)
+data = shuffle(data)
+    
+curve = data[band].values
+curve = np.vstack(curve)
+curve = np.nan_to_num(curve)
+
+scaling_constant = np.min(curve)
+print(f'scaling_constant {band}: {scaling_constant}')
+
+#scaling_constant = -14.019296288484181 # for g band, just incase I lose it
+
+
+#                   SETUP 2             #
+#---------------------------------------#
+
+fname = "DU17_Training/" + training_data[0]
+print(f'file: {fname}')
+
+data = pd.read_pickle(fname)
+data = shuffle(data) #shuffling for fun
+    
+curve = data[band].values
+curve = np.vstack(curve)#more convenient for manipulation
+
+#set the Flow AI
 flow = RealNVP(
-    n_inputs=91,
-    n_transforms =4,
+    n_inputs=len(curve[0]),#based on length of training data
+    n_transforms =8,
     n_conditional_inputs=4,
     n_neurons=32,
-    batch_norm_between_transforms=False)
+    batch_norm_between_transforms=True)
 
+#send to GPU
 flow.to(device)
-print(f'Created flow and sent to {device}')
-epochs = 200
-learning_rate = 1e-4
-test_split = 0.33
 
+#optimiser/scheduler setup
 optimiser = torch.optim.Adam(flow.parameters(),lr = learning_rate)
-loss = dict(train=[],val=[])
+scheduler = optim.lr_scheduler.StepLR(optimiser, step_size=step_f*epochs, gamma=gamma)
+print(f'Created flow and sent to {device}')
+
+#Ceck that the curves are correctly normalised
+curve = curve/scaling_constant
+try:
+    assert np.max(curve) <= 1.0
+except:
+    print("Curve not normalised correctly, curve max was:\t",np.max(curve))
+
+m1 = data['m1']
+m2 = data['m2']
+l1 = data['l1']
+l2 = data['l2']
+t_d = data['time']
+t_d = np.vstack(t_d)[0]
+conditional = np.vstack((m1,m2,l1,l2)).T
+print(len(m1)," Data points")
+m1 = np.vstack(data['m1'])
+m2 = np.vstack(data['m2'])
+l1 = np.vstack(data['l1'])
+l2 = np.vstack(data['l2'])
 
 
-plt.style.use('seaborn-colorblind')
-#finding the scaling constant to use to normalise the curves
-scaling_constant = []
-for i in np.arange(len(training_data)):
-    fname = "DU17_Training/" + training_data[i]
-    
-    
-    
+#                  CONVERTING DATA TO TENSORS   DO NOT TOUCH               #
+#--------------------------------------------------------------------------#
+#           I don't fully understand what's happening here so best         #
+#                        to just leave it as is, it works                  #
 
-    data = pd.read_pickle(fname)
-    data = shuffle(data)
-    
-    curve = data['g'].values
-    #print(curve[0])
-    curve = np.vstack(curve)
-    curve = np.nan_to_num(curve)
+data = []
+curve_train,curve_val,conditional_train,conditional_val = train_test_split(
+    curve,conditional,test_size = test_split,shuffle = False)
 
-    scaling_constant.append(np.min(curve))
-    print(f'scaling_constant {i}: {scaling_constant[-1]}')
-    
-scaling_constant = np.min(scaling_constant)
-print(scaling_constant)
+y_train = conditional_train
+x_train = curve_train
+y_val = conditional_val
+x_val = curve_val
 
-
-#Actually training on the data
-for i in np.arange(len(training_data)):
-    fname = "DU17_Training/" + training_data[i]
-    print(f'on {i}/{len(training_data)} \t file: {fname}')
-    
-    
-    plt.style.use('seaborn-colorblind')
-
-    data = pd.read_pickle(fname)
-    data = shuffle(data)
-    
-    curve = data['g'].values
-    curve = np.vstack(curve)
-    curve = np.nan_to_num(curve)
-    
-    curve = curve/scaling_constant
-    try:
-        assert np.max(curve) <= 1.0
-    except:
-        print("Curve not normalised correctly, curve max was:\t",np.max(curve))
-    m1 = data['m1']
-    m2 = data['m2']
-    l1 = data['l1']
-    l2 = data['l2']
-    t_d = data['time']
-    t_d = np.vstack(t_d)[0]
-    conditional = np.vstack((m1,m2,l1,l2)).T
-    print(len(m1)," Data points")
-    m1 = np.vstack(data['m1'])
-    m2 = np.vstack(data['m2'])
-    l1 = np.vstack(data['l1'])
-    l2 = np.vstack(data['l2'])
-
-    
-
-    
-
-    batch_size =  1000
-    curve_train,curve_val,conditional_train,conditional_val = train_test_split(
-        curve,conditional,test_size = test_split,shuffle = False)
-
-    y_train = conditional_train
-    x_train = curve_train
-    y_val = conditional_val
-    x_val = curve_val
-
-    x_train_tensor = torch.from_numpy(x_train.astype(np.float32))
-    y_train_tensor = torch.from_numpy(y_train.astype(np.float32))
-    train_dataset = torch.utils.data.TensorDataset(x_train_tensor,y_train_tensor)
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size= batch_size, shuffle = False
-        )
-
-    x_val_tensor = torch.from_numpy(x_val.astype(np.float32))
-    y_val_tensor = torch.from_numpy(y_val.astype(np.float32))
-    val_dataset = torch.utils.data.TensorDataset(x_val_tensor, y_val_tensor)
-    val_loader = torch.utils.data.DataLoader(
-        val_dataset, batch_size=batch_size, shuffle=False
+x_train_tensor = torch.from_numpy(x_train.astype(np.float32))
+y_train_tensor = torch.from_numpy(y_train.astype(np.float32))
+train_dataset = torch.utils.data.TensorDataset(x_train_tensor,y_train_tensor)
+train_loader = torch.utils.data.DataLoader(
+    train_dataset, batch_size= batch_size, shuffle = False
     )
 
-    
-    
-    print("beginning training")
-    for i in range(epochs):
-        flow.train()
-        train_loss = 0.0
-        for batch in train_loader:
-            x,y = batch
-            x = x.to(device)
-            y = y.to(device)
-            optimiser.zero_grad()
-            _loss = -flow.log_prob(x,conditional = y).mean()
-            _loss.backward()
-            optimiser.step()
+x_val_tensor = torch.from_numpy(x_val.astype(np.float32))
+y_val_tensor = torch.from_numpy(y_val.astype(np.float32))
+val_dataset = torch.utils.data.TensorDataset(x_val_tensor, y_val_tensor)
+val_loader = torch.utils.data.DataLoader(
+    val_dataset, batch_size=batch_size, shuffle=False
+)
 
-            train_loss += _loss.item()
-        loss['train'].append(train_loss/len(train_loader))
-
-        flow.eval()
-        val_loss = 0.0
-        for batch in val_loader:
-            x,y, = batch
-            x = x.to(device)
-            y = y.to(device)
-            with torch.no_grad():
-                _loss = -flow.log_prob(x,conditional=y).mean().item()
+    
+#                  TRAINING               #
+#-----------------------------------------#
+print("beginning training")
+for i in range(epochs):
+    flow.train()
+    train_loss = 0.0
+    for batch in train_loader:
+        x,y = batch
+        x = x.to(device)
+        y = y.to(device)
+        optimiser.zero_grad()
+        _loss = -flow.log_prob(x,conditional = y).mean()
+        _loss.backward()
             
-            val_loss += _loss
-        loss['val'].append(val_loss / len(val_loader))
-        if not i % 10:
-            print(f"Epoch {i} - train: {loss['train'][-1]:.3f}, val: {loss['val'][-1]:.3f}")
+        optimiser.step()
+            
+        train_loss += _loss.item()
+    loss['train'].append(train_loss/len(train_loader))
 
-flow.eval()
+    flow.eval()
+    val_loss = 0.0
+    for batch in val_loader:
+        x,y, = batch
+        x = x.to(device)
+        y = y.to(device)
+        with torch.no_grad():
+            _loss = -flow.log_prob(x,conditional=y).mean().item()
+            
+        val_loss += _loss
+    loss['val'].append(val_loss / len(val_loader))
+        
+    scheduler.step()
+
+    #Run every 10 epochs
+    if not i % 10:
+        try:
+            print(f"Epoch {i} - train: {loss['train'][-1]:.4g}"+
+                    f"\t val: {loss['val'][-1]:.4g}"+
+                    f"\tlr: {scheduler.get_last_lr()[0]:.3g}"+
+                    f"\tΔLoss: {loss['val'][-11] - loss['val'][-1]:.4g}")
+            try:
+                loss['delta'].append(loss['val'][-11] - loss['val'][-1])
+                delta = loss['delta'][-5:]
+                if all(d < 1. for d in delta):
+                     if all( d > -1. for d in delta):
+                        print("Early Stopping")
+                        break
+            except Exception as e:
+                pass
+                
+        except Exception as e:
+            print(e)
+            print(f"Epoch {i} - train: {loss['train'][-1]:.4g}"+
+                    f"\t val: {loss['val'][-1]:.4g}"+
+                    f"\tlr: {scheduler.get_last_lr()[0]:.3g}")
+            
+
 print("Finished training")
 
+#           EVALUATION          #
+#-------------------------------#
+
+#Plot the loss graph
+flow.eval()
 plt.plot(loss['train'], label='Train')
 plt.plot(loss['val'], label='Val.')
 plt.xlabel('Epoch')
@@ -160,55 +212,76 @@ plt.ylabel('Loss')
 plt.legend()
 plt.show()
 
+#plot the ΔLoss graph
+plt.plot(loss['delta'])
+plt.xlabel('Epoch')
+plt.ylabel('ΔLoss (log)')
+plt.show()
 
-def many_samples():
-    n = 100
-    test_array = []
-    for i in np.arange(n):
-        temp = random.choice(conditional)
-        test_array.append(temp)
-    test_array = np.array(test_array)
-    conditional = torch.from_numpy(test_array.astype(np.float32)).to(device)
+#   TESTING THE AI ON REAL DATA #
+#-------------------------------#
 
-    with torch.no_grad():
-        samples = flow.sample(n,conditional = conditional)
-
-    samples = samples.cpu().numpy()
-    conditional = conditional.cpu().numpy()
-    #print(np.mean(samples,axis = 0))
-
-
-    for i in np.arange(n):
-        plt.plot(t_d,samples[i],",",color = "blue")
-    plt.plot(t_d,np.mean(samples,axis = 0),color = "red")
-    plt.gca().invert_yaxis()
-    plt.show()
-
-
-n = 2
 test_array = []
-for i in np.arange(n):
+indices = []
+N = 3 #number of graphs to predict
+for n in np.arange(N):
+    i = random.randint(0,len(m1))
+    indices.append(i)
     temp = random.choice(conditional)
     test_array.append(temp)
 test_array = np.array(test_array)
 conditional = torch.from_numpy(test_array.astype(np.float32)).to(device)
 
+Big_Samples = []
+N_Samples = 100
+conditional = torch.from_numpy(test_array.astype(np.float32)).to(device)
+
+#create N samples
 with torch.no_grad():
-    samples = flow.sample(n,conditional = conditional)
-samples = samples.cpu().numpy()
+    for i in np.arange(N_Samples):
+        samples  = flow.sample(N,conditional = conditional)
+        Big_Samples.append(samples)
+for i in np.arange(len(Big_Samples)):
+    Big_Samples[i] = Big_Samples[i].cpu().numpy()
+
+
+
+Big_Samples = np.array(Big_Samples)
+
+final_samples = np.mean(Big_Samples,axis = 0)
+
+std = np.std(Big_Samples,axis = 0)
+max_lines = final_samples + std #np.max(Big_Samples,axis = 0)
+min_lines = final_samples - std #np.min(Big_Samples,axis = 0)
+
+
 conditional = conditional.cpu().numpy()
 
-m1,m2,l1,l2 = conditional[1]
-lc = Generate_LightCurve(m1,m2,l1,l2)[1]
-plt.plot(lc[0],lc[1][1],label = "Model[0]",c = "blue")
-plt.plot(t_d,scaling_constant*samples[1],".",ms = 0.5,label = "Flow[0]",c = "blue")
-
-m1,m2,l1,l2 = conditional[0]
-lc = Generate_LightCurve(m1,m2,l1,l2)[1]
-plt.plot(lc[0],lc[1][1],label = "Model[1]",c = "red")
-plt.plot(t_d,scaling_constant*samples[0],".",ms = 0.5,label = "Flow[1]",c = "red")
-#print(lc[1][1])
+cmap =cm.get_cmap('viridis') #so we can set the colour of all the plots
+for n in np.arange(N):
+    col = cmap(n/N)
+    m1_,m2_,l1_,l2_ = conditional[n]
+    lc = Generate_LightCurve(m1_,m2_,l1_,l2_)[1]
+    lc = np.nan_to_num(lc)
+    plt.plot(lc[0],lc[1][bandindex],"--",label = f"Model[{n}]",c = col)
+    plt.plot(t_d,scaling_constant*final_samples[n],"-",ms =4,label = f"Flow[{n}]",c = col)
+    plt.fill_between(t_d,min_lines[n]*scaling_constant,max_lines[n]*scaling_constant,alpha = 0.2,color = col)
 
 plt.gca().invert_yaxis()
 plt.legend()
 plt.show()
+
+#           SAVE THE MODEL      #
+#-------------------------------#
+models = os.listdir("Models/")
+print(models)
+i = 0
+for m in models:
+    if m == f'model_{i}_{band}.pth' :
+        print(m," Already taken")
+        i += 1
+    else:
+        torch.save(flow,f"Models/model_{i}_{band}.pth")
+        print(f"Model saved as Models/model_{i}_{band}.pth")
+torch.save(flow,f"Models/model_{i}_{band}.pth")
+print(f"Model saved as Models/model_{i}_{band}.pth")
