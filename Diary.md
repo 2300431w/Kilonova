@@ -174,7 +174,7 @@ I found an error in the data cropping function. I am not entirely sure what caus
 
 Another issue with the data cropping function was ```nan``` values "snuck" through the algorithm when the entire idea of the function is to remove ```nan``` values. It now works and succesfully crops data to a given range. Currently the programme takes a given crop_range and finds the starting index that allows for the most data to be included. Generally I have crop_range set such that approximatley 50% of the data (~50k) is available for training. An example is shown below:
 
-![alt_text](https://github.com/2300431w/Kilonova/blob/master/Cropped_data.png)
+![alt_text](https://github.com/2300431w/Kilonova/blob/master/Cropped%20_data.png)
 
 This succesfully gives us training outputs like:
 
