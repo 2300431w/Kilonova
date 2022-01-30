@@ -182,3 +182,4 @@ This succesfully gives us training outputs like:
 
 In other bands the predictions are approximatley the same showing the predictions generally grouping in one Magnitude area. possibly the average. The shape is generally correct though and it might be worth setting the crop_start to be at 0 s.t. the shape can be used succesfully even if the exact magnitude level is not predicted very helpfully.
 
+Re: The loss curves when training often plateau at ~-250 with the validation error plateauing slightly higher.
