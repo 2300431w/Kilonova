@@ -162,3 +162,23 @@ With all the data in a single file the model had loss in the regions of e16 and 
 ## 11:35
 
 While the AI trains again (loss looking promissing) I am trying to find a way to potentially crop the data. Unfortunatley in some bands the data has values of 0 where nan is given by the original curve so I am seeing if I can crop the data and optimise it for the largest amount of data with the smallest cropping possible
+
+
+# 30/1/2022
+
+## Major Roadblock
+Currently evacuated from the house with no indication for how long. The data has not uploaded to github so I am a little bit stuck. My Desktop is naturally still at home and my laptop is not able to run the pytorch program for whatever reason (I get an error on pip). I hope this won't last long but it is difficult to know at this stage. I haven't updated my diary in a while but I have made progress so this is mostly remembered.
+
+## Progress between the 18th and 30th of January
+I found an error in the data cropping function. I am not entirely sure what caused it seems it was a mixup of indices that essentially shuffled the data at near random resulting in useless models once trained. 
+
+Another issue with the data cropping function was ```nan``` values "snuck" through the algorithm when the entire idea of the function is to remove ```nan``` values. It now works and succesfully crops data to a given range. Currently the programme takes a given crop_range and finds the starting index that allows for the most data to be included. Generally I have crop_range set such that approximatley 50% of the data (~50k) is available for training. An example is shown below:
+
+![alt_text](https://github.com/2300431w/Kilonova/blob/master/Cropped_data.png)
+
+This succesfully gives us training outputs like:
+
+![alt_text](https://github.com/2300431w/Kilonova/blob/master/Cropped%20Data%20Predictions.png)
+
+In other bands the predictions are approximatley the same showing the predictions generally grouping in one Magnitude area. possibly the average. The shape is generally correct though and it might be worth setting the crop_start to be at 0 s.t. the shape can be used succesfully even if the exact magnitude level is not predicted very helpfully.
+
