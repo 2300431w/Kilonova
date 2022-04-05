@@ -7,7 +7,7 @@ import random
 import time
 from DU17_Model import Generate_LightCurve
 
-def compress_file(fname,new_fname,f = 10,troubleshooting = True):
+def compress_file(fname,new_fname,f = 10,troubleshooting = True,zero = False):
     data = pd.read_pickle(fname)
 
     m1 = data['m1']
@@ -21,63 +21,26 @@ def compress_file(fname,new_fname,f = 10,troubleshooting = True):
     m2 = np.vstack(data['m2'])
     l1 = np.vstack(data['l1'])
     l2 = np.vstack(data['l2'])
-
-    """while troubleshooting == True:
-        #PASS
-        #Notes: I was using the wrong lc. mind lc[1][0] is the u-band. the lowest in the data is g
-        
-        t_d = data['time']
-        t_d = np.vstack(t_d)[0]
-        i = random.randint(0,len(g))
-        curve = g[i]
-        m1_,m2_,l1_,l2_ = conditionals[i]
-        lc = Generate_LightCurve(m1_,m2_,l1_,l2_)[1]
-        #lc = np.nan_to_num(lc)
-        #plt.plot(compressed_t_d,band_data[0][i],label = "Compressed Curve",c = "blue")
-        plt.plot(lc[0],lc[1][1],":",label = "Model",c = "blue")
-        plt.plot(t_d,curve,"-.",ms = 5,label = "Curve",c = "red")
-        
-        plt.gca().invert_yaxis()
-        plt.legend()
-        plt.show()"""
     
     band_data = []
     for band in ['g','r','i','z']:
         curve = data[band].values
         curve = np.vstack(curve)
-
+        if zero == True:
+            curve = np.nan_to_num(curve)
+            
         t_d = data['time']
         t_d = np.vstack(t_d)[0]
 
         compressed_curve,compressed_t_d = compress_curve(t_d,curve,f)
         band_data.append(compressed_curve)
-
+    
     #compressed_curve = np.array(compressed_curve)
     
     
     band_data = np.array(band_data)
-    """while troubleshooting == True:
-        i = random.randint(0,len(m1))
-        print(i)
-        m1_ = m1[i]
-        m2_ = m2[i]
-        l1_ = l1[i]
-        l2_ = l2[i]
-        
-        print(m1_,m2_,l1_,l2_)
-        lc = Generate_LightCurve(m1_,m2_,l1_,l2_)[1]
-        #lc = np.nan_to_num(lc)
-        
-        curve = data['g'].values
-        curve = np.vstack(curve)
-        plt.plot(compressed_t_d,band_data[0][i],label = "Compressed Curve",c = "blue")
-        plt.plot(lc[0],lc[1][1],":",label = "Model",c = "red")
-        plt.plot(t_d,curve[i],"-.",ms = 5,label = "Curve",c = "red")
-        
-        plt.gca().invert_yaxis()
-        plt.legend()
-        plt.show()"""
-        
+    print(band_data)
+    
     final_data = []
     for i in np.arange(len(band_data[0])):
         
@@ -89,18 +52,6 @@ def compress_file(fname,new_fname,f = 10,troubleshooting = True):
         z = band_data[3][i]
         d = np.array([m1,m2,l1,l2,compressed_t_d,g,r,I,z])
         final_data.append(d)
-
-    
-    """while troubleshooting == True:
-        #pass
-        i = random.randint(0,len(final_data))
-        plt.plot(final_data[i][4],final_data[i][5],label = "compressed")
-        curve = data["g"].values
-        curve = np.vstack(curve)
-        plt.plot(t_d,curve[i],":",label = "original")
-        plt.gca().invert_yaxis()
-        plt.legend()
-        plt.show()"""
     
     print('check 1')
     final_data = np.array(final_data)
@@ -111,7 +62,8 @@ def compress_file(fname,new_fname,f = 10,troubleshooting = True):
     print('check 3')
 
     
-    
+    if zero == True:
+        new_fname += "_zero"
     df.to_pickle(f'Data_Cache/Comp/{new_fname}_comp.pkl')
     print(fname," compressed")
     
@@ -200,7 +152,8 @@ def crop_index(data,crop_range,searching = False, band = "g"):
     cropped_zero = zero_g[:,bottom:top]
     return(bottom,top)
     
-def crop_data(fname,crop_range,searching = False,band = 'g',zeroes = False,troubleshooting = False):
+def crop_data(fname,crop_range,searching = False,band = 'g',zeroes = False,
+              troubleshooting = False,static_bottom = False,init_bot = 0):
     fails = 0
     data = pd.read_pickle(fname)
     g = data[band].values
@@ -270,24 +223,39 @@ def crop_data(fname,crop_range,searching = False,band = 'g',zeroes = False,troub
         
         crop_range = len(nonzero_g[0]) - 1
         N = []
-        while crop_range >= 10:
+        while crop_range >= 1:
             time.sleep(15)
-            n = []
-            bottom = 0
-            top = bottom + crop_range
             
-            while top <= len(nonzero_g[0]) - 1:
-                n_ = 0
+            
+            if static_bottom == True:
+                #static bottom
+                bottom = init_bot
+                top = bottom + crop_range
+                n = 0
                 cropped_temp = nonzero_g[:,bottom:top]
                 for g in cropped_temp:
                     if np.isnan(np.sum(g)):
                         pass
                     else:
-                        n_ += 1
-                bottom += 1
-                top += 1
-                n.append(n_)
-            N.append([crop_range,round(100*max(n)/len(nonzero_g),2),n.index(max(n))])
+                        n += 1
+                N.append([crop_range,round(100*n/len(nonzero_g),2)])
+            else:
+                #moving bottom
+                n = []
+                bottom = 0
+                top = bottom + crop_range
+                while top <= len(nonzero_g[0]) - 1:
+                    n_ = 0
+                    cropped_temp = nonzero_g[:,bottom:top]
+                    for g in cropped_temp:
+                        if np.isnan(np.sum(g)):
+                            pass
+                        else:
+                            n_ += 1
+                    bottom += 1
+                    top += 1
+                    n.append(n_)
+                N.append([crop_range,round(100*max(n)/len(nonzero_g),2),n.index(max(n))])
             
             #CHANGE RATE CROP_RANGE GOES DOWN HERE
             crop_range -= 1
@@ -303,22 +271,41 @@ def crop_data(fname,crop_range,searching = False,band = 'g',zeroes = False,troub
     #g-band OG data: 450
     
     
-    bottom = 0
-    top = bottom + crop_range
-    n = []
-    while top <= len(nonzero_g[0]) - 1:
-            n_ = 0
-            cropped_temp = nonzero_g[:,bottom:top]
-            for g in cropped_temp:
-                if np.isnan(np.sum(g)):
-                    pass
-                else:
-                    n_ += 1
-            bottom += 1
-            top += 1
-            n.append(n_)
     
-    bottom = n.index(max(n))
+    n = []
+
+    if static_bottom == True:
+        bottom = init_bot
+        top = bottom + crop_range
+        #static bottom
+        n_ = 0
+        cropped_temp = nonzero_g[:,bottom:top]
+        for g in cropped_temp:
+            if np.isnan(np.sum(g)):
+                pass
+            else:
+                n_ += 1
+        bottom = init_bot
+    else:
+        bottom = 0
+        top = bottom + crop_range
+        #Mobile bottom
+        while top <= len(nonzero_g[0]) - 1:
+                n_ = 0
+                cropped_temp = nonzero_g[:,bottom:top]
+                for g in cropped_temp:
+                    if np.isnan(np.sum(g)):
+                        pass
+                    else:
+                        n_ += 1
+                bottom += 1
+                top += 1
+                n.append(n_)
+
+        bottom = n.index(max(n))
+
+    
+    
     top = bottom + crop_range
     cropped_temp = nonzero_g[:,bottom:top]
     cropped_zero = zero_g[:,bottom:top]
@@ -407,11 +394,15 @@ def crop_data(fname,crop_range,searching = False,band = 'g',zeroes = False,troub
 #r og compressed: 84
 #i og compressed: 84
 #z og compressed: 84
-crop_data("Data_Cache/Comp/Comp_10_Original_Combined_comp.pkl",crop_range = 84,searching = False,band = 'z',troubleshooting = False)
+"""crop_data("Data_Cache/Comp/Comp_91_Original_Combined_comp.pkl",crop_range = 8,
+          searching = False,band = 'g',troubleshooting = False,static_bottom = True,
+          init_bot = 1)"""
 
 #For compressing a file
-"""factor = 10
+factor = 45.5
 f = "Original_Combined"
 fname = "Data_Cache/Original/" + f + ".pkl"
-compress_file(fname,f'Comp_{factor:.2g}_{f}',f = factor,troubleshooting = True)"""
+
+compress_file(fname,f'Comp_{factor:.2g}_{f}',f = factor,
+              troubleshooting = True,zero = True)
 

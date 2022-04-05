@@ -27,15 +27,17 @@ epochs = 2000
 learning_rate = 1e-5
 test_split = 0.33
 batch_size =  1000
-
+patience = 0.1
 #for learning scheduling
-step_f = 0.2
-gamma = 0.1
+step_f = 1.
+gamma = 0.01
 
 #which band we are training to
-band = 'z'
+band = 'r' 
 bandindex = ['g','r','i','z'].index(band) + 1
 
+#idiot variables
+axis = 0
 
 #         SETUP 1                   #
 #-----------------------------------#
@@ -49,7 +51,7 @@ device = torch.device('cuda')#set device as GPU
 #---------------------------------------------------------------#
 #  finding the scaling constant to use to normalise the curves  #
 
-fname = "Data_Cache/Original/Original_combined.pkl"
+fname = "Data_Cache/New/combined.pkl"
 data = pd.read_pickle(fname)
 data = shuffle(data)
     
@@ -184,8 +186,8 @@ for i in range(epochs):
             try:
                 loss['delta'].append(loss['val'][-11] - loss['val'][-1])
                 delta = loss['delta'][-5:]
-                if all(d < 1. for d in delta):
-                     if all( d > -1. for d in delta):
+                if all(d < patience for d in delta):
+                     if all( d > -1*patience for d in delta):
                         print("Early Stopping")
                         break
             except Exception as e:
@@ -197,7 +199,67 @@ for i in range(epochs):
                     f"\t val: {loss['val'][-1]:.4g}"+
                     f"\tlr: {scheduler.get_last_lr()[0]:.3g}")
             
+    if i % 50 == 0:
+        #   TESTING THE AI ON REAL DATA #
+        #-------------------------------#
+        test_array = []
+        indices = []
+        N = 3 #number of graphs to predict
+        for n in np.arange(N):
+            j = random.randint(0,len(m1))
+            indices.append(j)
+            temp = random.choice(conditional)
+            test_array.append(temp)
+        
+        test_array = np.array(test_array)
+        
+        cond = torch.from_numpy(test_array.astype(np.float32)).to(device)
 
+        Big_Samples = []
+        N_Samples = 100
+        cond = torch.from_numpy(test_array.astype(np.float32)).to(device)
+
+        #create N samples
+        with torch.no_grad():
+            for j in np.arange(N_Samples):
+                samples  = flow.sample(N,conditional = cond)
+                Big_Samples.append(samples)
+        for j in np.arange(len(Big_Samples)):
+            Big_Samples[j] = Big_Samples[j].cpu().numpy()
+
+
+
+        Big_Samples = np.array(Big_Samples)
+
+        final_samples = np.mean(Big_Samples,axis = axis)
+
+        std = np.std(Big_Samples,axis = axis)
+        max_lines = final_samples + 3*std #np.max(Big_Samples,axis = 0)
+        min_lines = final_samples - 3*std #np.min(Big_Samples,axis = 0)
+
+
+        cond = cond.cpu().numpy()
+        #print(cond)
+        cmap =cm.get_cmap('viridis') #so we can set the colour of all the plots
+        for n in np.arange(N):
+            #print(f"plotting {n}")
+            col = cmap(n/N)
+            m1_,m2_,l1_,l2_ = cond[n]
+            lc = Generate_LightCurve(m1_,m2_,l1_,l2_)[1]
+            #print(m1_,m2_,l1_,l2_)
+            lc = np.nan_to_num(lc)
+            #print(lc[1][bandindex])
+            plt.plot(lc[0],lc[1][bandindex],"--",label = f"[{m1_:.3g}, {m2_:.3g}, {l1_:.3g}, {l2_:.3g}]",c = col)
+            plt.plot(t_d,scaling_constant*final_samples[n],"-",ms =4,c = col)
+            plt.fill_between(t_d,min_lines[n]*scaling_constant,max_lines[n]*scaling_constant,alpha = 0.2,color = col)
+
+        plt.gca().invert_yaxis()
+        plt.title(f'iteration {i}')
+        plt.legend()
+        plt.savefig(f'Model Evolution/iteration {i}.png')
+        #plt.show()
+        
+        plt.clf()
 print("Finished training")
 
 #           EVALUATION          #
@@ -205,8 +267,18 @@ print("Finished training")
 
 #Plot the loss graph
 flow.eval()
+plt.subplot(211)
+plt.plot(loss['train'] + np.abs(np.min(loss['train'])), label='Train')
+plt.plot(loss['val']+ np.abs(np.min(loss['val'])), label='Val.')
+plt.yscale('log')
+plt.xlabel('Epoch')
+plt.ylabel('Loss (log(loss + |min|))')
+plt.legend()
+
+plt.subplot(212)
 plt.plot(loss['train'], label='Train')
 plt.plot(loss['val'], label='Val.')
+#plt.yscale('log')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.legend()
@@ -220,7 +292,6 @@ plt.show()
 
 #   TESTING THE AI ON REAL DATA #
 #-------------------------------#
-
 test_array = []
 indices = []
 N = 3 #number of graphs to predict
@@ -230,16 +301,16 @@ for n in np.arange(N):
     temp = random.choice(conditional)
     test_array.append(temp)
 test_array = np.array(test_array)
-conditional = torch.from_numpy(test_array.astype(np.float32)).to(device)
+cond = torch.from_numpy(test_array.astype(np.float32)).to(device)
 
 Big_Samples = []
 N_Samples = 100
-conditional = torch.from_numpy(test_array.astype(np.float32)).to(device)
+cond = torch.from_numpy(test_array.astype(np.float32)).to(device)
 
 #create N samples
 with torch.no_grad():
     for i in np.arange(N_Samples):
-        samples  = flow.sample(N,conditional = conditional)
+        samples  = flow.sample(N,conditional = cond)
         Big_Samples.append(samples)
 for i in np.arange(len(Big_Samples)):
     Big_Samples[i] = Big_Samples[i].cpu().numpy()
@@ -248,23 +319,23 @@ for i in np.arange(len(Big_Samples)):
 
 Big_Samples = np.array(Big_Samples)
 
-final_samples = np.mean(Big_Samples,axis = 0)
+final_samples = np.mean(Big_Samples,axis = axis)
 
-std = np.std(Big_Samples,axis = 0)
-max_lines = final_samples + std #np.max(Big_Samples,axis = 0)
-min_lines = final_samples - std #np.min(Big_Samples,axis = 0)
+std = np.std(Big_Samples,axis = axis)
+max_lines = final_samples + 3* std #np.max(Big_Samples,axis = 0)
+min_lines = final_samples - 3* std #np.min(Big_Samples,axis = 0)
 
 
-conditional = conditional.cpu().numpy()
+cond = cond.cpu().numpy()
 
 cmap =cm.get_cmap('viridis') #so we can set the colour of all the plots
 for n in np.arange(N):
     col = cmap(n/N)
-    m1_,m2_,l1_,l2_ = conditional[n]
+    m1_,m2_,l1_,l2_ = cond[n]
     lc = Generate_LightCurve(m1_,m2_,l1_,l2_)[1]
     lc = np.nan_to_num(lc)
-    plt.plot(lc[0],lc[1][bandindex],"--",label = f"Model[{n}]",c = col)
-    plt.plot(t_d,scaling_constant*final_samples[n],"-",ms =4,label = f"Flow[{n}]",c = col)
+    plt.plot(lc[0],lc[1][bandindex],"--",label = f"[{m1_:.3g}, {m2_:.3g}, {l1_:.3g}, {l2_:.3g}]",c = col)
+    plt.plot(t_d,scaling_constant*final_samples[n],"-",ms =4,c = col)
     plt.fill_between(t_d,min_lines[n]*scaling_constant,max_lines[n]*scaling_constant,alpha = 0.2,color = col)
 
 plt.gca().invert_yaxis()

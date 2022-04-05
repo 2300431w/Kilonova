@@ -49,7 +49,7 @@ def plot_model(i,n,conditional,band,bandindex,t_d,scaling_constant,curve):
     
 def random_data(N,band,file,N_Samples = 100):
 
-    fname = "Data_Cache/Original/Original_combined.pkl"
+    fname = "Data_Cache/New/combined.pkl"
     data = pd.read_pickle(fname)
     data = shuffle(data)
     
@@ -85,15 +85,16 @@ def random_data(N,band,file,N_Samples = 100):
     t_d = data['time']
     t_d = np.vstack(t_d)[0]
     conditional = np.vstack((m1,m2,l1,l2)).T
+    print(random.choice(conditional))
     print(len(m1)," Data points")
     m1 = np.vstack(data['m1'])
     m2 = np.vstack(data['m2'])
     l1 = np.vstack(data['l1'])
     l2 = np.vstack(data['l2'])
         
-    plt.title(f'{band} Model Test')
+    #plt.title(f'{band} band Flow vs Model')
     plt.ylabel("Absolute Magnitude")
-    plt.xlabel("Time")
+    plt.xlabel("Time [days]")
 
     test_array = []
     indices = []
@@ -103,34 +104,37 @@ def random_data(N,band,file,N_Samples = 100):
         temp = random.choice(conditional)
         test_array.append(temp)
     test_array = np.array(test_array)
-    conditional = torch.from_numpy(test_array.astype(np.float32)).to(device)
-
+    cond = torch.from_numpy(test_array.astype(np.float32)).to(device)
+    
     Big_Samples = []
     
     with torch.no_grad():
         for i in np.arange(N_Samples):
-            samples  = flow.sample(N,conditional = conditional)
+            samples  = flow.sample(N,conditional = cond)
             Big_Samples.append(samples)
     for i in np.arange(len(Big_Samples)):
         Big_Samples[i] = Big_Samples[i].cpu().numpy()
     Big_Samples = np.array(Big_Samples)
 
-    final_samples = np.mean(Big_Samples,axis = 0)
+    axis = 0
+    final_samples = np.mean(Big_Samples,axis = axis)
     print(final_samples.shape)
-    std = np.std(Big_Samples,axis = 0)
-    max_lines = final_samples + std #np.max(Big_Samples,axis = 0)
-    min_lines = final_samples - std #np.min(Big_Samples,axis = 0)
+    std = np.std(Big_Samples,axis = axis)
+    max_lines = final_samples + 3*std #np.max(Big_Samples,axis = 0)
+    min_lines = final_samples - 3*std #np.min(Big_Samples,axis = 0)
 
-    conditional = conditional.cpu().numpy()
-
+    cond = cond.cpu().numpy()
+    print(cond)
     cmap = cm.get_cmap('viridis')
+
+    #t_d_scaled = np.linspace(t_d[0],t_d[-1],num = len(final_samples))
     for n in np.arange(N):
         col = cmap(n/N)
-        m1_,m2_,l1_,l2_ = conditional[n]
+        m1_,m2_,l1_,l2_ = cond[n]
         lc = Generate_LightCurve(m1_,m2_,l1_,l2_)[1]
         lc = np.nan_to_num(lc)
-        plt.plot(lc[0],lc[1][bandindex],"--",label = f"Model[{n}]",c = col)
-        plt.plot(t_d,scaling_constant*final_samples[n],"-",ms =4,label = f"Flow[{n}]",c = col)
+        plt.plot(lc[0],lc[1][bandindex],"--",label = f"[{m1_:.3g}, {m2_:.3g}, {l1_:.3g}, {l2_:.3g}]",c = col)
+        plt.plot(t_d,scaling_constant*final_samples[n],"-",ms =4,c = col)
         plt.fill_between(t_d,min_lines[n]*scaling_constant,max_lines[n]*scaling_constant,alpha = 0.2,color = col)
 
     plt.gca().invert_yaxis()
@@ -138,7 +142,8 @@ def random_data(N,band,file,N_Samples = 100):
     plt.show()
 
 #Define the Model
-model_path = "Models/model_0_z.pth"
+#model_path = "Models/Model_G4/model_r.pth"
+model_path = "Models/Model_G4/model_g.pth"
 flow = torch.load(model_path)
 device = torch.device('cuda')
 flow.to(device)
@@ -149,4 +154,5 @@ cmap =cm.get_cmap('hsv')
 plt.style.use('seaborn-colorblind')
 
 while True:
-    random_data(3,"z","Data_Cache/Crop/DU17_z_cropped_84.pkl",100)
+    #"DU17_training/Comp_91_Original_Combined_zero_comp.pkl",100)#
+    random_data(3,"g","Data_Cache/New/DU17_15_nannum.pkl",100)

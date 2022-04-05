@@ -16,7 +16,7 @@ import pandas as pd
 #m1,m2,c1,c2 = [1.3,1.4,0.142,0.153]
 
 def Generate_LightCurve(m1,m2,l1,l2,plot = False):
-    tini = 2
+    tini = 0
     tmax = 11
     dt = 0.01
     kappa = 10
@@ -169,7 +169,7 @@ def thread_fn2(fname,i,printing = False):
 #testing Jordan's code
 if __name__ == "__main__":
     
-    #adding noise
+    """#adding noise
     N_threads = 16
     threads = []
     
@@ -185,9 +185,10 @@ if __name__ == "__main__":
     
     for thread in threads:
         thread.join()
-    print("All threads finished")
+    print("All threads finished")"""
+    
     #Making the first data
-    """filedir = "mass_lambda/mass_lambda_distributions.h5"
+    filedir = "mass_lambda/mass_lambda_distributions.h5"
 
     d = h5py.File(filedir, 'r')
     data = np.array(d.get('labels'))
@@ -216,7 +217,8 @@ if __name__ == "__main__":
         x.start()
         
     for thread in threads:
-        thread.join()"""
+        thread.join()
+    print("All threads finished")
 
     #print('m1\tm2\tl1\tl2')
     
